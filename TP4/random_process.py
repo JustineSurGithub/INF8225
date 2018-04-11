@@ -1,5 +1,4 @@
-
-import numpy as np 
+import numpy as np
 
 # [reference] https://github.com/matthiasplappert/keras-rl/blob/master/rl/random.py
 
@@ -63,5 +62,3 @@ class UniformProcess():
         self.size = size
     def sample(self):
         return np.random.uniform(self.low,self.high,self.size)
-
-
