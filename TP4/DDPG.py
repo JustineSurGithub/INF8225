@@ -10,6 +10,7 @@ import random
 from collections import namedtuple
 
 from random_process import *
+import mujoco_py
 
 
 # from https://github.com/ghliu/pytorch-ddpg/blob/master/model.py
@@ -58,6 +59,8 @@ class Critic(nn.Module):  # Q network
 
     def forward(self, state, action):
         x = F.relu(self.fc1(state))
+        # print(x)
+        # print(action)
         x = F.relu(self.fc2(torch.cat([x, action], 1)))
         q = self.fc3(x)
         return q
@@ -128,9 +131,12 @@ class Agent:
         reward_batch = Variable(torch.cat(batch.reward))  # size 64
         done_batch = Variable(torch.cat(batch.done))
 
+        # print("ab",action_batch)
+        # print("sb",state_batch)
+
         '''Q - CRITIC UPDATE'''
         # Q(s_t,a_t)
-        action_batch.unsqueeze_(1)  # size 64x1
+        # action_batch.unsqueeze_(1)  # size 64x1
         state_action_value = self.critic(state_batch, action_batch)  # 64x1
 
         # a_{t+1} = mu_target(s_{t+1})
@@ -203,8 +209,8 @@ memory = ReplayMemory(100000)
 
 
 def train(epochs=50000, max_episode_length=500, batch_size=64,
-          env='Pendulum-v0', noise_flag=1, noise_parameters=[0, 0.1]):
-    env = gym.make(env)
+          env_name='Pendulum-v0', noise_flag=1, noise_parameters=[0, 0.1]):
+    env = gym.make(env_name)
 
     nb_states = env.observation_space.shape[0]
     nb_actions = env.action_space.shape[0]
@@ -221,12 +227,15 @@ def train(epochs=50000, max_episode_length=500, batch_size=64,
         total_reward = 0
         episode_count = 0
         epsilon *= 0.99
-        while not (done and episode_count < max_episode_length):
+        while not done and episode_count < max_episode_length:
             epsilon = max(epsilon, 0.1)
             obs_input = Variable(torch.from_numpy(obs).type(torch.FloatTensor))
             action = agent.act(obs_input, epsilon)
+
             next_obs, reward, done, _ = env.step(action)
-            memory.push(obs_input.data.view(1, -1), torch.Tensor(action),
+            # print(obs_input.data)
+            # print(torch.Tensor(action).view(1, -1))
+            memory.push(obs_input.data.view(1, -1), torch.Tensor(action).view(1, -1),
                         torch.from_numpy(next_obs).type(torch.FloatTensor).view(1, -1), torch.Tensor([reward]),
                         torch.Tensor([done]))
             obs = next_obs
@@ -240,7 +249,7 @@ def train(epochs=50000, max_episode_length=500, batch_size=64,
             batch = memory.sample(batch_size)
             agent.backward(batch)
 
-    output_file = "rewards/Noise-" + str(noise_flag) + "_parameters-" + str(noise_parameters)
+    output_file = "rewards/" + str(env_name) + "/Noise-" + str(noise_flag) + "_parameters-" + str(noise_parameters)
     np.save(output_file, rewards)
 
     # pd.DataFrame(rewards).rolling(50, center=False).mean().plot()
@@ -253,14 +262,27 @@ def train(epochs=50000, max_episode_length=500, batch_size=64,
 
     return rewards
 
+
+noiseFlag = 1  # normal noise
+noiseParameters = [0.15, 0, 0.2]
+# noiseParameters = [0.15, 0, 0.2]
+# train(epochs=50000, noise_flag=noiseFlag, noise_parameters = noiseParameters)
+
 # noiseFlag = 2 # normal noise
 # mu = 0
 # for sigma in [0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]:
 #     noiseParameters = [mu, sigma]
-#     train(epochs=300, noiseFlag=noiseFlag, noiseParameters = noiseParameters)
+#     train(epochs=50000, noise_flag=noiseFlag, noise_parameters = noiseParameters)
 
 
 # noiseFlag = 3 # uniform noise
 # for bound in [0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]:
 #    noiseParameters = [-bound, bound]
-#    train(epochs=300, noiseFlag=noiseFlag, noiseParameters = noiseParameters)
+#    train(epochs=50000, noise_flag=noiseFlag, noise_parameters = noiseParameters)
+
+train(epochs=50000, noise_flag=noiseFlag, noise_parameters=noiseParameters, env_name="Pendulum-v0")
+
+# env = gym.make("Swimmer-v2")  # 8 x 2
+# env = gym.make("Hopper-v2")  # 11 x 3
+# env = gym.make("HalfCheetah-v2")  # 17 x 6
+# env = gym.make("Ant-v2")  # 111 x 8
