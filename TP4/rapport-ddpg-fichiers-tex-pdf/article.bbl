@@ -1,0 +1,68 @@
+\begin{thebibliography}{}
+
+\bibitem[\protect\citeauthoryear{Gasic}{}]{LectureActor-critic}
+Gasic, M.
+\newblock Actor-critic methods.
+\newblock \url{http://mi.eng.cam.ac.uk/~mg436/LectureSlides/MLSALT7/L5.pdf}.
+\newblock Université de Cambridge.
+
+\bibitem[\protect\citeauthoryear{Lillicrap \bgroup et al\mbox.\egroup
+  }{2016}]{ddpg}
+Lillicrap, T.~P.; Hunt, J.~J.; Pritzel, A.; Heess, N.; Erez, T.; Tassaa, Y.;
+  Silver, D.; and Wierstra, D.
+\newblock 2016.
+\newblock Continuous control with deep reinforcement learning.
+\newblock {\em arXiv preprint arXiv:1509.02971v5}.
+
+\bibitem[\protect\citeauthoryear{Mnih \bgroup et al\mbox.\egroup
+  }{2013}]{mnih2013playing}
+Mnih, V.; Kavukcuoglu, K.; Silver, D.; Graves, A.; Antonoglou, I.; Wierstra,
+  D.; and Riedmiller, M.
+\newblock 2013.
+\newblock Playing atari with deep reinforcement learning.
+\newblock {\em arXiv preprint arXiv:1312.5602}.
+
+\bibitem[\protect\citeauthoryear{S~Ioffe}{2015}]{batch-norm}
+S~Ioffe, C.~S.
+\newblock 2015.
+\newblock Batch normalization: Accelerating deep network training by reducing
+  internal covariate shift.
+\newblock {\em arXiv preprint arXiv:1502.03167}.
+
+\bibitem[\protect\citeauthoryear{Schulman. \bgroup et al\mbox.\egroup
+  }{2015}]{TRPO}
+Schulman., J.; Levine, S.; Moritz, P.; Jordan, M.~I.; and Abbeel, P.
+\newblock 2015.
+\newblock Trust region policy optimization.
+\newblock {\em arXiv preprint arXiv:1502.05477}.
+
+\bibitem[\protect\citeauthoryear{Silver \bgroup et al\mbox.\egroup
+  }{2014}]{silver2014deterministic}
+Silver, D.; Lever, G.; Heess, N.; Degris, T.; Wierstra, D.; and Riedmiller, M.
+\newblock 2014.
+\newblock Deterministic policy gradient algorithms.
+\newblock In {\em ICML}.
+
+\bibitem[\protect\citeauthoryear{Todorov, Erez, and Tassa}{2012}]{MuJoCo}
+Todorov, E.; Erez, T.; and Tassa, Y.
+\newblock 2012.
+\newblock Mujoco: A physics engine for model-based control.
+\newblock In {\em Intelligent Robots and Systems (IROS), 2012 IEEE/RSJ
+  International Conference},  5026--5033.
+
+\bibitem[\protect\citeauthoryear{Uhlenbeck and
+  Ornstein}{1930}]{ornstein-uhlenbeck}
+Uhlenbeck, G.~E., and Ornstein, L.~S.
+\newblock 1930.
+\newblock On the theory of the brownian motion.
+\newblock {\em Physical review, 36(5):823}.
+
+\bibitem[\protect\citeauthoryear{Wang \bgroup et al\mbox.\egroup
+  }{2015}]{wang2015dueling}
+Wang, Z.; Schaul, T.; Hessel, M.; Van~Hasselt, H.; Lanctot, M.; and De~Freitas,
+  N.
+\newblock 2015.
+\newblock Dueling network architectures for deep reinforcement learning.
+\newblock {\em arXiv preprint arXiv:1511.06581}.
+
+\end{thebibliography}
