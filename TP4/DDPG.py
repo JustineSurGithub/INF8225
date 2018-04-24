@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch import nn
 import torch.nn.functional as F
-import gym  # Game environment
+import gym  
 from torch.autograd import Variable
 import random
 from collections import namedtuple
@@ -12,8 +12,8 @@ from collections import namedtuple
 from random_process import *
 import mujoco_py
 
-
 # from https://github.com/ghliu/pytorch-ddpg/blob/master/model.py
+
 def fanin_init(size, fanin=None):
     fanin = fanin or size[0]
     v = 1. / np.sqrt(fanin)
@@ -48,6 +48,8 @@ class Critic(nn.Module):  # Q network
         super(Critic, self).__init__()
         self.fc1 = nn.Linear(nb_states, 400)
         self.fc2 = nn.Linear(nb_actions + 400, 300)
+        # self.fc1 =  nn.Linear(nb_states + nb_actions, 400) #  to inject actions in the input layer
+        # self.fc2 = nn.Linear(400, 300)
         self.fc3 = nn.Linear(300, 1)
         self.init_weights()
 
@@ -59,9 +61,9 @@ class Critic(nn.Module):  # Q network
 
     def forward(self, state, action):
         x = F.relu(self.fc1(state))
-        # print(x)
-        # print(action)
         x = F.relu(self.fc2(torch.cat([x, action], 1)))
+        # x = F.relu(self.fc1(torch.cat([state, action], 1))) #  to inject actions in the input layer
+        # x = F.relu(self.fc2(x))
         q = self.fc3(x)
         return q
 
@@ -98,7 +100,6 @@ class Agent:
         self.criterion = nn.MSELoss()
 
         if noise_flag == 1:
-            # self.random_process = OrnsteinUhlenbeckProcess(size=nb_actions, theta=0.15, mu=0, sigma=0.2)
             self.random_process = OrnsteinUhlenbeckProcess(
                 size=nb_actions, theta=noise_parameters[0], mu=noise_parameters[1], sigma=noise_parameters[2])
         elif noise_flag == 2:
@@ -109,12 +110,11 @@ class Agent:
         self.gamma = 0.99
         self.batch_size = 64
 
-    def act(self, obs, epsilon=0.1):  # epsilon -> tunning paramter
+    def act(self, obs, epsilon=0.1):  # epsilon -> tuning paramter
         if random.random() < epsilon:  # choose random action
             action = np.random.uniform(-1., 1., self.nb_actions)
             return action
-        else:  # the action is the output of actor network + Exploration Noise
-            # action = self.actor(obs).data.numpy()
+        else:  # the action is the output of actor network + exploration Noise
             action = self.actor(obs).data.numpy()
             action += self.random_process.sample()
             action = np.clip(action, -1., 1.)  # to stay in interval [-1,1]
@@ -125,35 +125,32 @@ class Agent:
         transitions = memory.sample(self.batch_size)
         batch = Transition(*zip(*transitions))
 
-        state_batch = Variable(torch.cat(batch.state))  # size 64 x 3
-        action_batch = Variable(torch.cat(batch.action))  # size 64
-        next_state_batch = Variable(torch.cat(batch.next_state))  # size 64 x 3
-        reward_batch = Variable(torch.cat(batch.reward))  # size 64
+        state_batch = Variable(torch.cat(batch.state))  
+        action_batch = Variable(torch.cat(batch.action)) 
+        next_state_batch = Variable(torch.cat(batch.next_state))  
+        reward_batch = Variable(torch.cat(batch.reward))  
         done_batch = Variable(torch.cat(batch.done))
 
-        # print("ab",action_batch)
-        # print("sb",state_batch)
 
         '''Q - CRITIC UPDATE'''
         # Q(s_t,a_t)
-        # action_batch.unsqueeze_(1)  # size 64x1
-        state_action_value = self.critic(state_batch, action_batch)  # 64x1
+        state_action_value = self.critic(state_batch, action_batch)  
 
         # a_{t+1} = mu_target(s_{t+1})
-        next_action = self.actor_target(next_state_batch).detach()  # 64 x nb_actions
+        next_action = self.actor_target(next_state_batch).detach()  
 
         # Q'(s_{t+1},a_{t+1})
         next_state_action_value = self.critic_target(next_state_batch, next_action).detach()
-        next_state_action_value.squeeze_()  # 64
+        next_state_action_value.squeeze_()  
 
         # mask to consider next_state_values to 0 if state is terminal
         mask = Variable(np.logical_not(done_batch.data).type(torch.FloatTensor))
-        # mask = 1,1,1 ..
 
         # Compare Q(s_t,a_t) with r_t + gamma * Q'(s_{t+1},a_{t+1})
         expected_state_action_value = reward_batch + (self.gamma * next_state_action_value * mask)
         # Compute Huber loss
         # loss = F.smooth_l1_loss(state_action_values, expected_state_action_values)
+        # Compute MSE loss
         loss = self.criterion(state_action_value, expected_state_action_value)
 
         # Optimize the nn by updating weights with adam descent
@@ -161,12 +158,13 @@ class Agent:
         loss.backward()
         self.critic_optimizer.step()
 
+
         '''mu - ACTOR UPDATE'''
         # a_t = mu(s_t)
         action = self.actor(state_batch)
 
-        # J = esperance[Q(s_t,mu(s_t))] -> a maximiser
-        # -J = policy_loss -> a minimiser
+        # J = expectation[Q(s_t,mu(s_t))] -> to maximise
+        # -J = policy_loss -> to minimize
         policy_loss = - self.critic(state_batch, action)
         policy_loss = policy_loss.mean()
 
@@ -174,7 +172,7 @@ class Agent:
         policy_loss.backward()
         self.actor_optimizer.step()
 
-        # update target network with polyak averaging
+        # update target networks with polyak averaging
         soft_update(self.critic_target, self.critic, tau=0.001)
         soft_update(self.actor_target, self.actor, tau=0.001)
         return
@@ -208,8 +206,10 @@ class ReplayMemory(object):
 memory = ReplayMemory(100000)
 
 
+
 def train(epochs=50000, max_episode_length=500, batch_size=64,
           env_name='Pendulum-v0', noise_flag=1, noise_parameters=[0, 0.1]):
+
     env = gym.make(env_name)
 
     nb_states = env.observation_space.shape[0]
@@ -227,14 +227,11 @@ def train(epochs=50000, max_episode_length=500, batch_size=64,
         total_reward = 0
         episode_count = 0
         epsilon *= 0.99
-        while not done and episode_count < max_episode_length:
+        while (not done and episode_count < max_episode_length):
             epsilon = max(epsilon, 0.1)
             obs_input = Variable(torch.from_numpy(obs).type(torch.FloatTensor))
             action = agent.act(obs_input, epsilon)
-
             next_obs, reward, done, _ = env.step(action)
-            # print(obs_input.data)
-            # print(torch.Tensor(action).view(1, -1))
             memory.push(obs_input.data.view(1, -1), torch.Tensor(action).view(1, -1),
                         torch.from_numpy(next_obs).type(torch.FloatTensor).view(1, -1), torch.Tensor([reward]),
                         torch.Tensor([done]))
@@ -249,40 +246,23 @@ def train(epochs=50000, max_episode_length=500, batch_size=64,
             batch = memory.sample(batch_size)
             agent.backward(batch)
 
-    output_file = "rewards/" + str(env_name) + "/Noise-" + str(noise_flag) + "_parameters-" + str(noise_parameters)
+    output_file = "rewards/"+ str(env_name) +"_Noise-" + str(noise_flag) + "_parameters-" + str(noise_parameters)
     np.save(output_file, rewards)
 
-    # pd.DataFrame(rewards).rolling(50, center=False).mean().plot()
-    # plt.figure()
-    # plt.plot(rewards)
-    # plt.show()
+    pd.DataFrame(rewards).rolling(50, center=False).mean().plot()
+    plt.show()
 
-    # from matplotlib2tikz import save as tikz_save
-    # tikz_save("rewards.tex")
 
     return rewards
 
 
-noiseFlag = 1  # normal noise
-noiseParameters = [0.15, 0, 0.2]
-# noiseParameters = [0.15, 0, 0.2]
-# train(epochs=50000, noise_flag=noiseFlag, noise_parameters = noiseParameters)
+# Training
 
-# noiseFlag = 2 # normal noise
-# mu = 0
-# for sigma in [0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]:
-#     noiseParameters = [mu, sigma]
-#     train(epochs=50000, noise_flag=noiseFlag, noise_parameters = noiseParameters)
+noise_flag = 1 # Ornstein Uhlenbeck process
+noise_parameters = [0.15, 0, 0.2]
+env_name="Pendulum-v0"
+# env_name="HalfCheetah-v2"
+train(epochs=50000, max_episode_length=500, noise_flag = noise_flag, noise_parameters = noise_parameters, env_name = env_name)
 
 
-# noiseFlag = 3 # uniform noise
-# for bound in [0, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]:
-#    noiseParameters = [-bound, bound]
-#    train(epochs=50000, noise_flag=noiseFlag, noise_parameters = noiseParameters)
 
-train(epochs=50000, noise_flag=noiseFlag, noise_parameters=noiseParameters, env_name="Pendulum-v0")
-
-# env = gym.make("Swimmer-v2")  # 8 x 2
-# env = gym.make("Hopper-v2")  # 11 x 3
-# env = gym.make("HalfCheetah-v2")  # 17 x 6
-# env = gym.make("Ant-v2")  # 111 x 8
